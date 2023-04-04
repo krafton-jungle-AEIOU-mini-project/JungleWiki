@@ -1,6 +1,15 @@
-# 📕 JUNGLE WIKI (정글위키)
+# 📕 JUNGLE WIKI With ChatGPT (정글위키)
 
-## 🤝Commit Convention
+## **👨‍👩‍👧‍👦Team Communication**
+- [📒Notion](https://rowan-squirrel-5d3.notion.site/01-600aa7a1210244ceaa7143c0aaa89efa)
+  - 프로젝트 진행 상황 문서화 및 회의 내용 정리
+
+- [📙Google Sheet](https://docs.google.com/spreadsheets/d/14rpDtQ-78_wCnJU2XUhQPHAv70wlOgny14YYLPwkWvs/edit?usp=sharing)
+  - 프로젝트 진행상황 공유
+  - 단위 기능서
+  - API 정의서
+
+## **🤝Commit Convention**
 - 🗒️ message(메세지) 구조
 
 ```bash
