@@ -167,8 +167,24 @@ def post_article():
                'nickname': nickname, 'date': now}
     result = db.askBoard.insert_one(askData)
     askData['_id'] = str(result.inserted_id)
-    chatgpt_comment(askData['_id'], title)
-    return jsonify({'msg': '질문이 등록되었습니다.'}), 200
+
+    # Start the chatgpt_comment function in a separate thread
+    thread1 = threading.Thread(target=chatgpt_comment, args=(askData['_id'], title))
+    thread1.start()
+    
+    # Return the response immediately with data:1
+    #print(memo)
+    return jsonify({'msg': '질문이 등록되었습니다.', 'data': askData}), 200
+
+def chatgpt_comment(id, title):
+    messages = []
+    messages.append({"role": "user", "content": title})
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=messages)
+    chatgpt_reply = completion.choices[0].message["content"].strip()
+    db.askBoard.update_one({'_id': bson.ObjectId(id)}, {
+                        "$set": {"content": chatgpt_reply}})
+
 
 
 @app.route('/api/ask/<id>/comment/create', methods=['POST'])
@@ -200,15 +216,6 @@ def show_comment(id):
 
     return rs
 
-
-def chatgpt_comment(id, title):
-    messages = []
-    messages.append({"role": "user", "content": title})
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=messages)
-    chatgpt_reply = completion.choices[0].message["content"].strip()
-    db.askBoard.update_one({'_id': bson.ObjectId(id)}, {
-        "$set": {"content": chatgpt_reply}})
 
 
 def getUserNickName():
