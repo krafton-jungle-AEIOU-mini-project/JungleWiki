@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}로그인{%endblock %}
+
+{% block script %}
+<script>
+  $(document).ready(function () {
+    $('#userId, #userPassword').change(function () {
+      if ($('#userId').val() != '' && $('#userPassword').val() != '') {
+        $('#warning-message').html('')
+      }
+    });
+  });
+  function login() {
+    event.preventDefault();
+    $.ajax({
+      type: "POST",
+      url: "/api/login",
+      data: { id_give: $('#userId').val(), pw_give: $('#userPassword').val() },
+      success: function (response) {
+        if (response['result'] == 'success') {
+          alert('로그인 완료!')
+          window.location.href = '/'
+        } else {
+          let temp_html = `<p class="text-xs px-2 pb-3 text-red-500">${response['msg']}</p>`
+          if (response['errorField']) $(`#${response['errorField']}`).focus();
+          $('#warning-message').html(temp_html)
+        }
+      }
+    })
+  }
+</script>
+{%endblock %}
+
+{% block head %}
+
+{% include'head.html' %}
+{{ super() }}
+
+{% endblock %}
+{%block content %}
+
+<div class="important flex flex-col items-center">
+  <div class="bg-white p-20 rounded-3xl shadow-lg flex flex-col items-center">
+    <p class="text-2xl font-bold">로그인</p>
+    <form class="w-96 mt-8 space-y-3" onsubmit="login()" action="#" method="POST">
+      <div class="space-y-4 rounded-md shadow-sm">
+        <div>
+          <label class="font-bold" for="userId">아이디</label>
+          <input id="userId" name="email" type="email" autocomplete="email" required
+            class="relative block w-full text-2xl rounded-md border-0 px-3 py-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-zinc-600 sm:text-sm sm:leading-6"
+            placeholder="예) nanu@naver.com">
+        </div>
+        <div>
+          <label class="font-bold" for="userPassword">비밀번호</label>
+          <input id="userPassword" name="password" type="password" autocomplete="current-password" required
+            class="relative block w-full text-xl rounded-md border-0 px-3 py-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:z-10 focus:ring-2 focus:ring-inset focus:ring-zinc-600 sm:text-sm sm:leading-6"
+            placeholder="비밀번호를 입력해주세요.">
+        </div>
+      </div>
+
+      <div id="warning-message">
+      </div>
+      <button type="submit"
+        class="group relative flex w-full justify-center bg-zinc-600 px-3 py-4 text-sm font-semibold text-white hover:bg-zinc-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-600">
+        로그인하기
+      </button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
