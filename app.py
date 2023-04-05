@@ -59,12 +59,12 @@ def api_login():
     if result is not None:
         payload = {
             'id': id_receive,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=100)
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
         session['Authorization'] = token
-        return jsonify({'result': 'success'})
+        return jsonify({'result': 'success'}), 200
     else:
         return jsonify({'result': 'fail', 'errorField': 'userId', 'msg': '아이디(로그인 전용 아이디) 또는 비밀번호를 잘못 입력했습니다.<br/> 입력하신 내용을 다시 확인해주세요.'})
 
@@ -78,18 +78,18 @@ def api_join():
     if (db.user.find_one({'id': id_receive}) is not None):
         return jsonify({'result': 'fail', 'errorField': 'userId', 'msg': '이미 존재하는 아이디 입니다.'})
     elif (db.user.find_one({'nick': nickname_receive})):
-        return jsonify({'result': 'fail', 'errorField': 'userNickname', 'msg': '이미 존재하는 닉네임 입니다.'})
+        return jsonify({'result': 'fail', 'errorField': 'userNickname', 'msg': '이미 존재하는 닉네임 입니다.'}), 401
 
     pw_hash = hashlib.sha256(pw_receive.encode('utf-8')).hexdigest()
 
     db.user.insert_one(
         {'id': id_receive, 'pw': pw_hash, 'nick': nickname_receive})
 
-    return jsonify({'result': 'success'})
+    return jsonify({'result': 'success'}), 200
 
 
-@app.route('/detail')
-def detail():
+@app.route('/detail/<id>')
+def detail(id):
     if 'Authorization' in session:
         token_receive = session['Authorization']
         try:
@@ -99,12 +99,12 @@ def detail():
             return render_template('detail.html', isLogin=True, nickname=user_info["nick"])
         except jwt.ExpiredSignatureError:
             session.pop('Authorization', None)
-            return render_template('detail.html', isLogin=False, alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요.")
+            return redirect(url_for("redirectPage", alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요."))
         except jwt.exceptions.DecodeError:
             session.pop('Authorization', None)
-            return render_template('detail.html', isLogin=False, alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다.")
+            return redirect(url_for("redirectPage", alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다."))
     else:
-        return render_template('detail.html')
+        return render_template('detail.html', id=id)
 
 
 @app.route('/logout')
@@ -118,43 +118,44 @@ def show_articles():
     filter = {}
     project = {}
     rs = list()
-    docs = list(db.memos.find(filter, project).sort('date', -1))
+    docs = list(db.askBoard.find(filter, project).sort('date', -1))
    # docs = list(db.memos.find().sort({'date', -1}))
     # 시간으로 리스트 정리하기
-    for memo in docs:
+    for askData in docs:
         item = {
-            '_id': str(memo['_id']),
-            'title': memo['title'],
-            'content': memo['content'],
-            'nickname': memo['nickname'],
-            'date': datetime.datetime.fromtimestamp(memo['date'])
+            '_id': str(askData['_id']),
+            'title': askData['title'],
+            'content': askData['content'],
+            'nickname': askData['nickname'],
+            'date': datetime.datetime.fromtimestamp(askData['date'])
         }
         rs.append(item)
 
-    return jsonify({'code': 1, 'data': rs})
+    return jsonify({'asks': rs}), 200
 
 
 @app.route('/api/ask/create', methods=['POST'])
 def post_article():
     title = request.form['title']
-    nickname = request.form['nickname']
+    nickname = getUserNickName()
     now = int(time.time())
-    memo = {'title': title, 'content': "", 'nickname': nickname, 'date': now}
-    result = db.memos.insert_one(memo)
-    memo['_id'] = str(result.inserted_id)
-    chatgpt_comment(memo['_id'], title)
-    return jsonify({'code': 1, 'data': memo})
+    askData = {'title': title, 'content': "",
+               'nickname': nickname, 'date': now}
+    result = db.askBoard.insert_one(askData)
+    askData['_id'] = str(result.inserted_id)
+    chatgpt_comment(askData['_id'], title)
+    return jsonify({'msg': '질문이 등록되었습니다.'}), 200
 
 
 @app.route('/api/<id>/comment/create', methods=['POST'])
 def post_comment(id):
     comment = request.form['comment']
     now = int(time.time())
-    nickname = request.form['nickname']
+    nickname = getUserNickName()
     memo = {'postid': id, 'comment': comment,
             'nickname': nickname, 'date': now}
     db.comment.insert_one(memo)
-    return jsonify({'code': 1})
+    return jsonify({'msg': '질문이 등록되었습니다.'}), 200
     # memo['_id'] = str(result.inserted_id)
 
 
@@ -173,18 +174,35 @@ def show_comment(id):
             'date': datetime.datetime.fromtimestamp(memo['date'])
         }
         rs.append(item)
-    return jsonify({'code': 1, 'data': rs})
+    return jsonify({'data': rs}), 200
 
 
 def chatgpt_comment(id, title):
-    # user_content = request.form['title']
     messages = []
     messages.append({"role": "user", "content": title})
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=messages)
     chatgpt_reply = completion.choices[0].message["content"].strip()
-    db.memos.update_one({'_id': bson.ObjectId(id)}, {
-                        "$set": {"content": chatgpt_reply}})
+    db.askBoard.update_one({'_id': bson.ObjectId(id)}, {
+        "$set": {"content": chatgpt_reply}})
+
+
+def getUserNickName():
+    if 'Authorization' in session:
+        token_receive = session['Authorization']
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY,
+                                 algorithms=['HS256'])
+            user_info = db.user.find_one({"id": payload['id']})
+            return user_info["nick"]
+        except jwt.ExpiredSignatureError:
+            session.pop('Authorization', None)
+            return redirect(url_for("redirectPage", alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요."))
+        except jwt.exceptions.DecodeError:
+            session.pop('Authorization', None)
+            return redirect(url_for("redirectPage", alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다."))
+    else:
+        return redirect(url_for("redirectPage", alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다."))
 
 
 @app.route('/redirect')
