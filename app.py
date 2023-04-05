@@ -100,7 +100,7 @@ def detail(id):
             db.user.find_one({"id": payload['id']})
             data = read_article(id)
             commentData = show_comment(id)
-            if data['content'] is '':
+            if data['content'] == '':
                 data['content'] = 'ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!'
             return render_template('detail.html', isLogin=True, title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, id=id)
         except jwt.ExpiredSignatureError:
@@ -112,7 +112,7 @@ def detail(id):
     else:
         data = read_article(id)
         commentData = show_comment(id)
-        if data['content'] is '':
+        if data['content'] == '':
             data['content'] = 'ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!'
         return render_template('detail.html', title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, id=id)
 
