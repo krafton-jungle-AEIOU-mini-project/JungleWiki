@@ -23,10 +23,10 @@ def home():
             return render_template('index.html', isLogin=True, nickname=user_info["nick"])
         except jwt.ExpiredSignatureError:
             session.pop('Authorization', None)
-            return render_template('index.html', isLogin=False, alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요.")
+            return redirect(url_for("redirectPage", alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요."))
         except jwt.exceptions.DecodeError:
             session.pop('Authorization', None)
-            return render_template('index.html', isLogin=False, alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다.")
+            return redirect(url_for("redirectPage", alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다."))
     else:
         return render_template('index.html')
 
@@ -34,32 +34,14 @@ def home():
 @app.route('/join')
 def join():
     if 'Authorization' in session:
-        token_receive = session['Authorization']
-        try:
-            payload = jwt.decode(token_receive, SECRET_KEY,
-                                 algorithms=['HS256'])
-            user_info = db.user.find_one({"id": payload['id']})
-            return redirect(url_for("home", alert="이미 로그인 된 상태라 홈으로 이동합니다.", isLogin=True, nickname=user_info["nick"]))
-        except jwt.ExpiredSignatureError:
-            session.pop('Authorization', None)
-        except jwt.exceptions.DecodeError:
-            session.pop('Authorization', None)
+        return redirect(url_for("home"))
     return render_template('join.html')
 
 
 @app.route('/login')
 def login():
     if 'Authorization' in session:
-        token_receive = session['Authorization']
-        try:
-            payload = jwt.decode(token_receive, SECRET_KEY,
-                                 algorithms=['HS256'])
-            user_info = db.user.find_one({"id": payload['id']})
-            return redirect(url_for("home", alert="이미 로그인 된 상태라 홈으로 이동합니다.", isLogin=True, nickname=user_info["nick"]))
-        except jwt.ExpiredSignatureError:
-            session.pop('Authorization', None)
-        except jwt.exceptions.DecodeError:
-            session.pop('Authorization', None)
+        return redirect(url_for("home"))
     return render_template('login.html')
 
 
@@ -125,6 +107,13 @@ def detail():
 def logout():
     session.pop('Authorization', None)
     return render_template('index.html')
+
+
+@app.route('/redirect')
+def redirectPage():
+    alert = request.args.get('alert')
+    session.pop('Authorization', None)
+    return render_template('redirect.html', alert=alert)
 
 
 if __name__ == '__main__':
