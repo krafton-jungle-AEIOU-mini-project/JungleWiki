@@ -4,29 +4,7 @@
 
 {% block script %}
 
-{% if isLogin == True %}
-<script>
-  function createComment() {
-    event.preventDefault();
-    let myComment = $('#myComment').val();
-    $('#myComment').val('');
-    $.ajax({
-      type: 'POST',
-      url: `/api/ask/642da906d57e19b6ce994410/comment/create`,
-      data: {
-        'comment': myComment,
-      },
-      success: function (response) {
-        alert(response['msg']);
-        if (response['result'] == 'success') {
-          window.location.reload();
-        }
-      },
-    });
-  }
-</script>
 
-{% endif %}
 {% endblock %}
 
 {% block head %}
@@ -72,5 +50,25 @@
     </div>
   </div>
 </div>
+{% if isLogin == True %}
+<script>
+  function createComment() {
+    event.preventDefault();
+    let myComment = $('#myComment').val();
+    $('#myComment').val('');
+    $.ajax({
+      type: 'POST',
+      url: `/api/ask/642da906d57e19b6ce994410/comment/create`,
+      data: {
+        'comment': myComment,
+      },
+      success: function (response) {
+        window.location.reload();
+        alert(response['msg']);
+      },
+    });
+  }
+</script>
 
+{% endif %}
 {% endblock %}
