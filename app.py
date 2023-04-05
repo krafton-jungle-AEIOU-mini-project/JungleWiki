@@ -13,25 +13,16 @@ db = client.dbjungle
 @app.route('/')
 def home():
    return render_template('index.html')
-@app.route('/api/ask/list', methods=['GET'])
-def show_articles():
-    filter = {}
-    project = {}
-    rs = list()
-    docs = list(db.memos.find(filter, project).sort('date', -1))
-   # docs = list(db.memos.find().sort({'date', -1}))
-    #시간으로 리스트 정리하기
-    for memo in docs:
-        item = {
-            '_id': str(memo['_id']),
-            'title': memo['title'],
-            'content': memo['content'],
-            'nickname': memo['nickname'],
-            'date': dt.fromtimestamp(memo['date'])
-        }
-        rs.append(item)
-    
-    return jsonify({'code': 1, 'data': rs})
+
+@app.route('/api/<id>/comment/create', methods =['POST'])
+def post_comment(id):
+    comment = request.form['comment']
+    now = int(time.time())
+    nickname = request.form['nickname']
+    memo = {'postid': id, 'comment': comment ,'nickname' : nickname, 'date':now}
+    db.comment.insert_one(memo)
+    return jsonify({'code':1})
+    #memo['_id'] = str(result.inserted_id)
 
    
 if __name__ == '__main__':  
