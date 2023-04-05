@@ -185,11 +185,13 @@ def post_article():
 
 
 def chatgpt_comment(id, title):
-    messages = []
+    messages = [
+        {"role": "system", "content": '개요에 맞게 1,000자 이내로 작성해줘.'}]
     messages.append({"role": "user", "content": title})
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=messages)
-    chatgpt_reply = completion.choices[0].message["content"].strip()
+    chatgpt_reply = completion.choices[0].message["content"].replace(
+        "\n", "<br/>")
     db.askBoard.update_one({'_id': bson.ObjectId(id)}, {
         "$set": {"content": chatgpt_reply, 'withAnswer': True}})
 
