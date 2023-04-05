@@ -7,6 +7,8 @@ import time
 from pytz import timezone
 from chatgpt import *
 import bson
+import threading
+from tqdm import tqdm
 
 client = MongoClient('localhost', 27017)
 db = client.dbjungle
@@ -113,6 +115,30 @@ def logout():
     return render_template('index.html')
 
 
+@app.route('/api/ask/list/<id>' , methods = ['GET'])
+def read_article(id):
+    filter = {'_id':bson.ObjectId(id)}
+    filter2 = {'postid':id}
+    rs = list()
+    docs = list(db.memos.find(filter))
+    docs2 = list(db.comment.find(filter2))
+    for memo in docs:
+        item = {
+            'title':memo['title'],
+            'content':memo['content'],
+            'nickname':memo['nickname'],
+            'date':datetime.datetime.fromtimestamp(memo['date'])
+        }
+        rs.append(item)
+    for memo2 in docs2:
+        item2 = {
+            'comment':memo2['comment'],
+            'date' :datetime.datetime.fromtimestamp(memo2['date']),
+            'nickname' : memo2['nickname']
+        }
+    rs.append(item2)
+    return jsonify({'code':1, 'data':rs})
+
 @app.route('/api/ask/list', methods=['GET'])
 def show_articles():
     filter = {}
@@ -123,15 +149,26 @@ def show_articles():
     # 시간으로 리스트 정리하기
     for memo in docs:
         item = {
-            '_id': str(memo['_id']),
-            'title': memo['title'],
-            'content': memo['content'],
-            'nickname': memo['nickname'],
-            'date': datetime.datetime.fromtimestamp(memo['date'])
+            'title':memo['title'],
+            'content':memo['content'],
+            'nickname':memo['nickname'],
+            'date':datetime.datetime.fromtimestamp(memo['date'])
         }
         rs.append(item)
-
     return jsonify({'code': 1, 'data': rs})
+# def emptyString(id):
+#         filter = {'_id': bson.ObjectId(id)}
+#         content = "ChatGPT 답변중..."
+#         update = {'$set': {'content': content}}
+#         db.memos.update_one(filter,update)
+# def __init__(self):
+#     t = threading.Thread(target=self.chatgpt_comment())
+#     t.start
+#     t.daemon = True
+#     t1 = threading.Thread(target=self.emptyString())
+#     t1.start
+
+    
 
 
 @app.route('/api/ask/create', methods=['POST'])
