@@ -75,10 +75,10 @@
   {% if isLogin == True %}
   <form class="flex w-full gap-x-4 my-5" onsubmit="askQuestion()">
     <input id="question" name="question" type="text" autocomplete="off" required
-      class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-black/10 focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
+      class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-[#183828] focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
       placeholder="{{nickname}} 님 무엇이 궁금하신가요?">
     <button type="submit"
-      class="flex-none rounded-md bg-zinc-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">질문하기</button>
+      class="flex-none rounded-md bg-[#183828] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">질문하기</button>
   </form>
   {% endif %}
 
