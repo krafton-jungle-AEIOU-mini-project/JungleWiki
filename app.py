@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import hashlib
-import datetime 
+import datetime
 import jwt
 import time
 from pytz import timezone
@@ -112,6 +112,7 @@ def logout():
     session.pop('Authorization', None)
     return render_template('index.html')
 
+
 @app.route('/api/ask/list', methods=['GET'])
 def show_articles():
     filter = {}
@@ -119,7 +120,7 @@ def show_articles():
     rs = list()
     docs = list(db.memos.find(filter, project).sort('date', -1))
    # docs = list(db.memos.find().sort({'date', -1}))
-    #시간으로 리스트 정리하기
+    # 시간으로 리스트 정리하기
     for memo in docs:
         item = {
             '_id': str(memo['_id']),
@@ -129,52 +130,62 @@ def show_articles():
             'date': datetime.datetime.fromtimestamp(memo['date'])
         }
         rs.append(item)
-    
+
     return jsonify({'code': 1, 'data': rs})
+
+
 @app.route('/api/ask/create', methods=['POST'])
 def post_article():
     title = request.form['title']
     nickname = request.form['nickname']
     now = int(time.time())
-    memo = {'title': title, 'content':"", 'nickname':nickname,'date':now}
+    memo = {'title': title, 'content': "", 'nickname': nickname, 'date': now}
     result = db.memos.insert_one(memo)
     memo['_id'] = str(result.inserted_id)
-    chatgpt_comment(memo['_id'],title)
+    chatgpt_comment(memo['_id'], title)
     return jsonify({'code': 1, 'data': memo})
 
-@app.route('/api/<id>/comment/create', methods =['POST'])
+
+@app.route('/api/<id>/comment/create', methods=['POST'])
 def post_comment(id):
     comment = request.form['comment']
     now = int(time.time())
     nickname = request.form['nickname']
-    memo = {'postid': id, 'comment': comment ,'nickname' : nickname, 'date':now}
+    memo = {'postid': id, 'comment': comment,
+            'nickname': nickname, 'date': now}
     db.comment.insert_one(memo)
-    return jsonify({'code':1})
-    #memo['_id'] = str(result.inserted_id)
-@app.route('/api/ask/<id>/comment/list' , methods = ['GET'] )
-def show_comment(id):
-   filter = {'postid':id}
-   project = {}
-   rs = list()
-   #docs = list(db.memos.find ().sort( { 'date' : 1 } ))
-   docs = list(db.comment.find(filter, project).sort('date', 1))
-   for memo in docs:
-       item = {
-           'nickname':memo['nickname'],
-           'comment':memo['comment'],
-           #'_id': str(memo['_id']),
-           'date': datetime.datetime.fromtimestamp(memo['date'])
-       }
-       rs.append(item)
-   return jsonify({'code':1,'data':rs})
+    return jsonify({'code': 1})
+    # memo['_id'] = str(result.inserted_id)
 
-def chatgpt_comment(id,title): 
-   # user_content = request.form['title']
-   messages = []
-   messages.append({"role": "user", "content": title})
-   completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
-   chatgpt_reply = completion.choices[0].message["content"].strip()
-   db.memos.update_one({'_id': bson.ObjectId(id)},{"$set":{"content":chatgpt_reply}})
+
+@app.route('/api/ask/<id>/comment/list', methods=['GET'])
+def show_comment(id):
+    filter = {'postid': id}
+    project = {}
+    rs = list()
+    # docs = list(db.memos.find ().sort( { 'date' : 1 } ))
+    docs = list(db.comment.find(filter, project).sort('date', 1))
+    for memo in docs:
+        item = {
+            'nickname': memo['nickname'],
+            'comment': memo['comment'],
+            # '_id': str(memo['_id']),
+            'date': datetime.datetime.fromtimestamp(memo['date'])
+        }
+        rs.append(item)
+    return jsonify({'code': 1, 'data': rs})
+
+
+def chatgpt_comment(id, title):
+    # user_content = request.form['title']
+    messages = []
+    messages.append({"role": "user", "content": title})
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=messages)
+    chatgpt_reply = completion.choices[0].message["content"].strip()
+    db.memos.update_one({'_id': bson.ObjectId(id)}, {
+                        "$set": {"content": chatgpt_reply}})
+
 
 @app.route('/redirect')
 def redirectPage():
