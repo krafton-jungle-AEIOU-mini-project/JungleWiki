@@ -3,6 +3,24 @@
 {% block title %}상세페이지{%endblock %}
 
 {% block script %}
+{% if isAnswer == False %}
+<script>
+  setInterval(requestAnswer, 1000)
+
+  function requestAnswer() {
+    $.ajax({
+      type: 'GET',
+      url: '/api/isGPTAnswer/{{id}}',
+      data: {},
+      success: function (response) {
+        if (response['isGPTAnswer']) {
+          location.reload()
+        }
+      },
+    });
+  }
+</script>
+{% endif %}
 {% endblock %}
 
 {% block head %}
