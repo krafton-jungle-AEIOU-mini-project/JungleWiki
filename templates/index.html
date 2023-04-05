@@ -54,10 +54,8 @@
         'title': title,
       },
       success: function (response) {
+        window.location.reload();
         alert(response['msg']);
-        if (response['result'] == 'success') {
-          window.location.reload();
-        }
       },
     });
   }

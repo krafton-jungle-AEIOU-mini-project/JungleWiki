@@ -3,30 +3,6 @@
 {% block title %}상세페이지{%endblock %}
 
 {% block script %}
-
-{% if isLogin == True %}
-<script>
-  function createComment() {
-    event.preventDefault();
-    let myComment = $('#myComment').val();
-    $('#myComment').val('');
-    $.ajax({
-      type: 'POST',
-      url: `/api/ask/642da906d57e19b6ce994410/comment/create`,
-      data: {
-        'comment': myComment,
-      },
-      success: function (response) {
-        alert(response['msg']);
-        if (response['result'] == 'success') {
-          window.location.reload();
-        }
-      },
-    });
-  }
-</script>
-
-{% endif %}
 {% endblock %}
 
 {% block head %}
@@ -51,7 +27,7 @@
       <p class="text-lg">{{content}}</p>
     </div>
     {% if isLogin == True %}
-    <form onsubmit="createComment()" class="flex w-full gap-x-4 my-5">
+    <form class="flex w-full gap-x-4 my-5" action="/api/comment/create/{{id}}" method="POST">
       <input id="myComment" name="myComment" type="text" autocomplete="off" required
         class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-black/10 focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
         placeholder="답변을 도와주세요! ChatGPT 친구가 정확하지 않아요!">
