@@ -103,8 +103,22 @@ def api_join():
 
 
 @app.route('/detail')
-def detailPage():
-    return render_template('detail.html')
+def detail():
+    if 'Authorization' in session:
+        token_receive = session['Authorization']
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY,
+                                 algorithms=['HS256'])
+            user_info = db.user.find_one({"id": payload['id']})
+            return render_template('detail.html', isLogin=True, nickname=user_info["nick"])
+        except jwt.ExpiredSignatureError:
+            session.pop('Authorization', None)
+            return render_template('detail.html', isLogin=False, alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요.")
+        except jwt.exceptions.DecodeError:
+            session.pop('Authorization', None)
+            return render_template('detail.html', isLogin=False, alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다.")
+    else:
+        return render_template('detail.html')
 
 
 @app.route('/logout')
