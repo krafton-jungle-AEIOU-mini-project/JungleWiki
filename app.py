@@ -90,7 +90,7 @@ def api_join():
     return jsonify({'result': 'success'}), 200
 
 
-@app.route('/detail/<id>')
+@app.route('/detail/<id>', methods=['GET', 'POST'])
 def detail(id):
     if 'Authorization' in session:
         token_receive = session['Authorization']
@@ -123,7 +123,6 @@ def logout():
     return render_template('index.html')
 
 
-# @app.route('/api/ask/list/<id>', methods=['GET'])
 def read_article(id):
     filter = {'_id': bson.ObjectId(id)}
     askData = db.askBoard.find_one(filter)
@@ -169,12 +168,13 @@ def post_article():
     askData['_id'] = str(result.inserted_id)
 
     # Start the chatgpt_comment function in a separate thread
-    thread1 = threading.Thread(target=chatgpt_comment, args=(askData['_id'], title))
+    thread1 = threading.Thread(
+        target=chatgpt_comment, args=(askData['_id'], title))
     thread1.start()
-    
+
     # Return the response immediately with data:1
-    #print(memo)
     return jsonify({'msg': '질문이 등록되었습니다.', 'data': askData}), 200
+
 
 def chatgpt_comment(id, title):
     messages = []
@@ -183,28 +183,26 @@ def chatgpt_comment(id, title):
         model="gpt-3.5-turbo", messages=messages)
     chatgpt_reply = completion.choices[0].message["content"].strip()
     db.askBoard.update_one({'_id': bson.ObjectId(id)}, {
-                        "$set": {"content": chatgpt_reply}})
+        "$set": {"content": chatgpt_reply}})
 
 
-
-@app.route('/api/ask/<id>/comment/create', methods=['POST'])
+@app.route('/api/comment/create/<id>', methods=['POST'])
 def post_comment(id):
-    comment = request.form['comment']
+    myComment = request.form['myComment']
     now = int(time.time())
     nickname = getUserNickName()
-    memo = {'postid': id, 'comment': comment,
-            'nickname': nickname, 'date': now}
-    db.commentBoard.insert_one(memo)
-    return jsonify({'msg': '답변이 등록되었습니다.'}), 200
+    commentData = {'postid': id, 'comment': myComment,
+                   'nickname': nickname, 'date': now}
+    db.commentBoard.insert_one(commentData)
+    # return jsonify({'msg': '답변이 등록되었습니다.'}), 200
+    return redirect(url_for("detail", id=id))
 
 
 def show_comment(id):
-    print(id)
     filter = {'postid': id}
     project = {}
     rs = list()
     docs = list(db.commentBoard.find(filter, project).sort('date', 1))
-    print(docs)
     for memo in docs:
         item = {
             'nickname': memo['nickname'],
@@ -215,7 +213,6 @@ def show_comment(id):
         rs.append(item)
 
     return rs
-
 
 
 def getUserNickName():
