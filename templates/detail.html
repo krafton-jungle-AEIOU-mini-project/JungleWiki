@@ -5,7 +5,7 @@
 {% block script %}
 {% if isAnswer == False %}
 <script>
-  setInterval(requestAnswer, 1000)
+  let checkAnswer = setInterval(requestAnswer, 1000)
 
   function requestAnswer() {
     $.ajax({
@@ -14,7 +14,8 @@
       data: {},
       success: function (response) {
         if (response['isGPTAnswer']) {
-          location.reload()
+          $('#answerGPT').html(response['content'])
+          clearInterval(checkAnswer)
         }
       },
     });
@@ -42,7 +43,7 @@
     </div>
     <div class="w-full flex flex-col px-3 py-2 border-dashed border-2 border-sky-500 bg-gray-200">
       <p class="text-xl font-bold">ChatGPT:</p>
-      <p class="text-lg">{{content}}</p>
+      <p class="text-lg" id="answerGPT">{{content}}</p>
     </div>
     {% if isLogin == True %}
     <form class="flex w-full gap-x-4 my-5" action="/api/comment/create/{{id}}" method="POST">
@@ -50,7 +51,7 @@
         class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-black/10 focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
         placeholder="답변을 도와주세요! ChatGPT 친구가 정확하지 않아요!">
       <button type="submit"
-        class="flex-none rounded-md bg-zinc-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">답글달기</button>
+        class="flex-none rounded-md bg-[#183828] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">답글달기</button>
     </form>
     {%endif%}
     <div id="comment-list" class="flex flex-col border-2 border-transparent border-t-gray-200">
