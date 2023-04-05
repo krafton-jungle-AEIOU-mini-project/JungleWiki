@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  {% block head %}
+  <title>
+    {% block title %}{% endblock %} - 정글Wiki
+  </title>
+  {% endblock %}
+  <script>
+    {% if alert %}
+    alert("{{ alert }}")
+    {% endif %}
+  </script>
+  {% block script %} {% endblock %}
+</head>
+
+<body class="relative bg-gray-50">
+  {% include 'header.html' %}
+  <div class="mt-28 mx-24" id="content">
+    {% block content %}{% endblock %}
+  </div>
+</body>
+
+</html>
