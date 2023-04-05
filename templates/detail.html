@@ -2,6 +2,33 @@
 
 {% block title %}상세페이지{%endblock %}
 
+{% block script %}
+
+{% if isLogin == True %}
+<script>
+  function createComment() {
+    event.preventDefault();
+    let myComment = $('#myComment').val();
+    $('#myComment').val('');
+    $.ajax({
+      type: 'POST',
+      url: `/api/ask/642da906d57e19b6ce994410/comment/create`,
+      data: {
+        'comment': myComment,
+      },
+      success: function (response) {
+        alert(response['msg']);
+        if (response['result'] == 'success') {
+          window.location.reload();
+        }
+      },
+    });
+  }
+</script>
+
+{% endif %}
+{% endblock %}
+
 {% block head %}
 
 {% include'head.html' %}
@@ -13,62 +40,35 @@
 <div class="important flex flex-col w-full items-center pb-32">
   <div class="flex flex-col w-full py-2">
     <div class="w-full border-2 border-transparent border-b-gray-300">
-      <p class="text-2xl font-bold px-3 py-3">스텍 큐 알고리즘에 대해서 알려줄 수 있나요?</p>
+      <p class="text-2xl font-bold px-3 py-3">{{title}}</p>
     </div>
     <div class="w-full flex justify-between py-2">
-      <p class="text-sm px-3">질문자 : [그린반] 조현오</p>
-      <p class="text-sm px-3">2023.04.04</p>
+      <p class="text-sm px-3">질문자 : {{nickname}}</p>
+      <p class="text-sm px-3">{{date}}</p>
     </div>
     <div class="w-full flex flex-col px-3 py-2 border-dashed border-2 border-sky-500 bg-gray-200">
       <p class="text-xl font-bold">ChatGPT:</p>
-      <p class="text-lg">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Viverra elit donec nunc posuere
-        pulvinar libero fermentum mi. Lobortis vulputate consectetur suspendisse massa mauris. Lacus odio pretium enim
-        gravida. Netus sit a, enim enim quam quam egestas arcu.</p>
+      <p class="text-lg">{{content}}</p>
     </div>
     {% if isLogin == True %}
-    <form class="flex w-full gap-x-4 my-5">
-      <input id="question" name="question" type="text" autocomplete="off" required
+    <form onsubmit="createComment()" class="flex w-full gap-x-4 my-5">
+      <input id="myComment" name="myComment" type="text" autocomplete="off" required
         class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-black/10 focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
         placeholder="답변을 도와주세요! ChatGPT 친구가 정확하지 않아요!">
       <button type="submit"
         class="flex-none rounded-md bg-zinc-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">답글달기</button>
     </form>
     {%endif%}
-    <div class="flex flex-col border-2 border-transparent border-t-gray-200">
+    <div id="comment-list" class="flex flex-col border-2 border-transparent border-t-gray-200">
+      {% for comment in commentData %}
       <div class="px-8 py-3 space-y-4 border-2 border-transparent border-b-gray-200">
-        <p class="text-xl font-bold">홍길동</p>
-        <p class="text-lg">감사합니다.</p>
+        <p class="text-xl font-bold">{{comment['nickname']}}</p>
+        <p class="text-lg">{{comment['comment']}}</p>
         <p class="text-right">
-          2023.04.04
+          {{comment['date']}}
         </p>
       </div>
-      <div class="px-8 py-3 space-y-4 border-2 border-transparent border-b-gray-200">
-        <p class="text-xl font-bold">홍길동</p>
-        <p class="text-lg">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Viverra elit donec nunc posuere
-          pulvinar libero fermentum mi. Lobortis vulputate consectetur suspendisse massa mauris. Lacus odio pretium enim
-          gravida. Netus sit a, enim enim quam quam egestas arcu.</p>
-        <p class="text-right">
-          2023.04.04
-        </p>
-      </div>
-      <div class="px-8 py-3 space-y-4 border-2 border-transparent border-b-gray-200">
-        <p class="text-xl font-bold">홍길동</p>
-        <p class="text-lg">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Viverra elit donec nunc posuere
-          pulvinar libero fermentum mi. Lobortis vulputate consectetur suspendisse massa mauris. Lacus odio pretium enim
-          gravida. Netus sit a, enim enim quam quam egestas arcu.</p>
-        <p class="text-right">
-          2023.04.04
-        </p>
-      </div>
-      <div class="px-8 py-3 space-y-4 border-2 border-transparent border-b-gray-200">
-        <p class="text-xl font-bold">홍길동</p>
-        <p class="text-lg">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Viverra elit donec nunc posuere
-          pulvinar libero fermentum mi. Lobortis vulputate consectetur suspendisse massa mauris. Lacus odio pretium enim
-          gravida. Netus sit a, enim enim quam quam egestas arcu.</p>
-        <p class="text-right">
-          2023.04.04
-        </p>
-      </div>
+      {% endfor %}
     </div>
   </div>
 </div>

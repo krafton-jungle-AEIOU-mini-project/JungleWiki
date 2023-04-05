@@ -2,6 +2,69 @@
 
 {% block title %}HOME{%endblock %}
 
+{% block script %}
+<script>
+  $(document).ready(function () {
+    readQuestions()
+  });
+
+  function readQuestions() {
+    $.ajax({
+      type: 'GET',
+      url: '/api/ask/list',
+      data: {},
+      success: function (response) {
+        let asks = response['asks'];
+        for (let i = 0; i < asks.length; i += 1) {
+          let index = asks[i]['_id'];
+          let title = asks[i]['title'];
+          let content = asks[i]['content'];
+          let nickname = asks[i]['nickname'];
+          let date = new Date(asks[i]['date']);
+          setAskCard(index, title, content, nickname, date);
+        }
+      },
+    });
+  }
+
+  function goDetailPage(id) {
+    window.location.href = `/detail/${id}`;
+  }
+
+  function setAskCard(index, title, content, nickname, date) {
+    let temp_html = `
+      <div onclick="goDetailPage('${index}')" class="flex flex-col py-3 border-2 border-transparent border-b-gray-200 cursor-pointer">
+        <p class="text-xl px-3">${content ? '답변완료' : '답변대기중'}</p>
+        <p class="text-xl font-bold px-3 pt-1">${title}</p>
+        <p class="text-sm px-3 pt-1">${nickname} ${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}</p>
+      </div>
+    `
+    $('#card-list').append(temp_html);
+  }
+
+  {% if isLogin == True %}
+  function askQuestion() {
+    event.preventDefault();
+    let title = $('#question').val();
+    $('#question').val('');
+    $.ajax({
+      type: 'POST',
+      url: '/api/ask/create',
+      data: {
+        'title': title,
+      },
+      success: function (response) {
+        alert(response['msg']);
+        if (response['result'] == 'success') {
+          window.location.reload();
+        }
+      },
+    });
+  }
+  {% endif %}
+</script>
+{%endblock %}
+
 {% block head %}
 
 {% include'head.html' %}
@@ -12,7 +75,7 @@
 
 <div class="important flex flex-col w-full items-center pb-32">
   {% if isLogin == True %}
-  <form class="flex w-full gap-x-4 my-5">
+  <form class="flex w-full gap-x-4 my-5" onsubmit="askQuestion()">
     <input id="question" name="question" type="text" autocomplete="off" required
       class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-black/10 focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
       placeholder="{{nickname}} 님 무엇이 궁금하신가요?">
@@ -25,10 +88,7 @@
     <div class="w-full border-2 border-transparent border-b-gray-300">
       <p class="text-2xl font-bold px-3 py-3">질문 게시글</p>
     </div>
-    <div class="flex flex-col py-3 border-2 border-transparent border-b-gray-200">
-      <p class="text-xl px-3">답변대기중</p>
-      <p class="text-xl font-bold px-3 pt-1">스택 큐 알고리즘에 대해서 알려줄 수 있나요?</p>
-      <p class="text-sm px-3 pt-1">2023. 04. 04</p>
+    <div id="card-list">
     </div>
   </div>
 </div>
