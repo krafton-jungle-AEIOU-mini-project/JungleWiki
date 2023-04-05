@@ -14,16 +14,23 @@ db = client.dbjungle
 def home():
    return render_template('index.html')
 
-@app.route('/api/<id>/comment/create', methods =['POST'])
-def post_comment(id):
-    comment = request.form['comment']
-    now = int(time.time())
-    nickname = request.form['nickname']
-    memo = {'postid': id, 'comment': comment ,'nickname' : nickname, 'date':now}
-    db.comment.insert_one(memo)
-    return jsonify({'code':1})
-    #memo['_id'] = str(result.inserted_id)
+@app.route('/api/ask/<id>/comment/list' , methods = ['GET'] )
+def show_comment(id):
+   filter = {'postid':id}
+   project = {}
+   rs = list()
+   #docs = list(db.memos.find ().sort( { 'date' : 1 } ))
+   docs = list(db.comment.find(filter, project).sort('date', 1))
+   for memo in docs:
+       item = {
+           'nickname':memo['nickname'],
+           'comment':memo['comment'],
+           #'_id': str(memo['_id']),
+           'date': dt.fromtimestamp(memo['date'])
+       }
+       rs.append(item)
+   return jsonify({'code':1,'data':rs})
 
-   
+
 if __name__ == '__main__':  
    app.run('0.0.0.0',port=5000,debug=True)
