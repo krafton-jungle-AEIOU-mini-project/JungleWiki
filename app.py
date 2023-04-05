@@ -31,6 +31,22 @@ def home():
         return render_template('index.html')
 
 
+@app.route('/join')
+def join():
+    if 'Authorization' in session:
+        token_receive = session['Authorization']
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY,
+                                 algorithms=['HS256'])
+            user_info = db.user.find_one({"id": payload['id']})
+            return redirect(url_for("home", alert="이미 로그인 된 상태라 홈으로 이동합니다.", isLogin=True, nickname=user_info["nick"]))
+        except jwt.ExpiredSignatureError:
+            session.pop('Authorization', None)
+        except jwt.exceptions.DecodeError:
+            session.pop('Authorization', None)
+    return render_template('join.html')
+
+
 @app.route('/login')
 def login():
     if 'Authorization' in session:
@@ -65,6 +81,30 @@ def api_login():
         return jsonify({'result': 'success'})
     else:
         return jsonify({'result': 'fail', 'errorField': 'userId', 'msg': '아이디(로그인 전용 아이디) 또는 비밀번호를 잘못 입력했습니다.<br/> 입력하신 내용을 다시 확인해주세요.'})
+
+
+@app.route('/api/join', methods=['POST'])
+def api_join():
+    id_receive = request.form['id_give']
+    pw_receive = request.form['pw_give']
+    nickname_receive = request.form['nickname_give']
+
+    if (db.user.find_one({'id': id_receive}) is not None):
+        return jsonify({'result': 'fail', 'errorField': 'userId', 'msg': '이미 존재하는 아이디 입니다.'})
+    elif (db.user.find_one({'nick': nickname_receive})):
+        return jsonify({'result': 'fail', 'errorField': 'userNickname', 'msg': '이미 존재하는 닉네임 입니다.'})
+
+    pw_hash = hashlib.sha256(pw_receive.encode('utf-8')).hexdigest()
+
+    db.user.insert_one(
+        {'id': id_receive, 'pw': pw_hash, 'nick': nickname_receive})
+
+    return jsonify({'result': 'success'})
+
+
+@app.route('/detail')
+def detailPage():
+    return render_template('detail.html')
 
 
 @app.route('/logout')
