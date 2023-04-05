@@ -7,6 +7,8 @@ import time
 from pytz import timezone
 from chatgpt import *
 import bson
+import threading
+from tqdm import tqdm
 
 client = MongoClient('localhost', 27017)
 db = client.dbjungle
@@ -59,7 +61,7 @@ def api_login():
     if result is not None:
         payload = {
             'id': id_receive,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=100)
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=1000)
         }
         token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
@@ -95,8 +97,12 @@ def detail(id):
         try:
             payload = jwt.decode(token_receive, SECRET_KEY,
                                  algorithms=['HS256'])
-            user_info = db.user.find_one({"id": payload['id']})
-            return render_template('detail.html', isLogin=True, nickname=user_info["nick"])
+            db.user.find_one({"id": payload['id']})
+            data = read_article(id)
+            commentData = show_comment(id)
+            if data['content'] is '':
+                data['content'] = 'ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!'
+            return render_template('detail.html', isLogin=True, title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, id=id)
         except jwt.ExpiredSignatureError:
             session.pop('Authorization', None)
             return redirect(url_for("redirectPage", alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요."))
@@ -104,13 +110,31 @@ def detail(id):
             session.pop('Authorization', None)
             return redirect(url_for("redirectPage", alert="로그인 정보가 존재하지 않아 로그아웃 되었습니다."))
     else:
-        return render_template('detail.html', id=id)
+        data = read_article(id)
+        commentData = show_comment(id)
+        if data['content'] is '':
+            data['content'] = 'ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!'
+        return render_template('detail.html', title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, id=id)
 
 
 @app.route('/logout')
 def logout():
     session.pop('Authorization', None)
     return render_template('index.html')
+
+
+# @app.route('/api/ask/list/<id>', methods=['GET'])
+def read_article(id):
+    filter = {'_id': bson.ObjectId(id)}
+    askData = db.askBoard.find_one(filter)
+
+    detailData = {
+        'title': askData['title'],
+        'content': askData['content'],
+        'nickname': askData['nickname'],
+        'date': datetime.datetime.fromtimestamp(askData['date']),
+    }
+    return detailData
 
 
 @app.route('/api/ask/list', methods=['GET'])
@@ -147,25 +171,24 @@ def post_article():
     return jsonify({'msg': '질문이 등록되었습니다.'}), 200
 
 
-@app.route('/api/<id>/comment/create', methods=['POST'])
+@app.route('/api/ask/<id>/comment/create', methods=['POST'])
 def post_comment(id):
     comment = request.form['comment']
     now = int(time.time())
     nickname = getUserNickName()
     memo = {'postid': id, 'comment': comment,
             'nickname': nickname, 'date': now}
-    db.comment.insert_one(memo)
-    return jsonify({'msg': '질문이 등록되었습니다.'}), 200
-    # memo['_id'] = str(result.inserted_id)
+    db.commentBoard.insert_one(memo)
+    return jsonify({'msg': '답변이 등록되었습니다.'}), 200
 
 
-@app.route('/api/ask/<id>/comment/list', methods=['GET'])
 def show_comment(id):
+    print(id)
     filter = {'postid': id}
     project = {}
     rs = list()
-    # docs = list(db.memos.find ().sort( { 'date' : 1 } ))
-    docs = list(db.comment.find(filter, project).sort('date', 1))
+    docs = list(db.commentBoard.find(filter, project).sort('date', 1))
+    print(docs)
     for memo in docs:
         item = {
             'nickname': memo['nickname'],
@@ -174,7 +197,8 @@ def show_comment(id):
             'date': datetime.datetime.fromtimestamp(memo['date'])
         }
         rs.append(item)
-    return jsonify({'data': rs}), 200
+
+    return rs
 
 
 def chatgpt_comment(id, title):
