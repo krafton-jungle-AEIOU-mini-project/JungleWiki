@@ -31,5 +31,47 @@ def home():
         return render_template('index.html')
 
 
+@app.route('/login')
+def login():
+    if 'Authorization' in session:
+        token_receive = session['Authorization']
+        try:
+            payload = jwt.decode(token_receive, SECRET_KEY,
+                                 algorithms=['HS256'])
+            user_info = db.user.find_one({"id": payload['id']})
+            return redirect(url_for("home", alert="이미 로그인 된 상태라 홈으로 이동합니다.", isLogin=True, nickname=user_info["nick"]))
+        except jwt.ExpiredSignatureError:
+            session.pop('Authorization', None)
+        except jwt.exceptions.DecodeError:
+            session.pop('Authorization', None)
+    return render_template('login.html')
+
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    id_receive = request.form['id_give']
+    pw_receive = request.form['pw_give']
+    pw_hash = hashlib.sha256(pw_receive.encode('utf-8')).hexdigest()
+    result = db.user.find_one({'id': id_receive, 'pw': pw_hash})
+
+    if result is not None:
+        payload = {
+            'id': id_receive,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        }
+        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+
+        session['Authorization'] = token
+        return jsonify({'result': 'success'})
+    else:
+        return jsonify({'result': 'fail', 'errorField': 'userId', 'msg': '아이디(로그인 전용 아이디) 또는 비밀번호를 잘못 입력했습니다.<br/> 입력하신 내용을 다시 확인해주세요.'})
+
+
+@app.route('/logout')
+def logout():
+    session.pop('Authorization', None)
+    return render_template('index.html')
+
+
 if __name__ == '__main__':
     app.run('0.0.0.0', port=5000, debug=True)
