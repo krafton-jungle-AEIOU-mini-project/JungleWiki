@@ -2,6 +2,30 @@
 
 {% block title %}상세페이지{%endblock %}
 
+{% block script %}
+<script>
+  $(document).ready(function () {
+    readAsk()
+  });
+
+  function readAsk() {
+    // $.ajax({
+    //   type: 'GET',
+    //   url: `/api/ask/${id}`,
+    //   data: {},
+    //   success: function (response) {
+    //     let ask = response['ask'];
+    //     let title = ask['title'];
+    //     let content = ask['content'];
+    //     let nickname = ask['nickname'];
+    //     let date = new Date(ask['date']);
+    //     setAskCard(title, content, nickname, date);
+    //   },
+    // });
+  }
+</script>
+{% endblock %}
+
 {% block head %}
 
 {% include'head.html' %}
