@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}HOME{%endblock %}
+{% block script %}
+<script>
+  {% if alert %}
+  alert("{{ alert }}")
+  window.location.href = '/login'
+  {% endif %}
+</script>
+{%endblock %}
+{% block head %}
+
+{% include'head.html' %}
+{{ super() }}
+
+{% endblock %}
