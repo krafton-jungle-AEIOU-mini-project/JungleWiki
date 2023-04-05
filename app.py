@@ -136,7 +136,8 @@ def read_article(id):
             'date' :datetime.datetime.fromtimestamp(memo2['date']),
             'nickname' : memo2['nickname']
         }
-    rs.append(item2)
+        rs.append(item2)
+    
     return jsonify({'code':1, 'data':rs})
 
 @app.route('/api/ask/list', methods=['GET'])
@@ -145,7 +146,6 @@ def show_articles():
     project = {}
     rs = list()
     docs = list(db.memos.find(filter, project).sort('date', -1))
-   # docs = list(db.memos.find().sort({'date', -1}))
     # 시간으로 리스트 정리하기
     for memo in docs:
         item = {
@@ -156,19 +156,8 @@ def show_articles():
         }
         rs.append(item)
     return jsonify({'code': 1, 'data': rs})
-# def emptyString(id):
-#         filter = {'_id': bson.ObjectId(id)}
-#         content = "ChatGPT 답변중..."
-#         update = {'$set': {'content': content}}
-#         db.memos.update_one(filter,update)
-# def __init__(self):
-#     t = threading.Thread(target=self.chatgpt_comment())
-#     t.start
-#     t.daemon = True
-#     t1 = threading.Thread(target=self.emptyString())
-#     t1.start
 
-    
+
 
 
 @app.route('/api/ask/create', methods=['POST'])
@@ -176,11 +165,27 @@ def post_article():
     title = request.form['title']
     nickname = request.form['nickname']
     now = int(time.time())
-    memo = {'title': title, 'content': "", 'nickname': nickname, 'date': now}
+    memo = {'title': title, 'content': "ChatGPT가 답변중입니다...", 'nickname': nickname, 'date': now}
     result = db.memos.insert_one(memo)
     memo['_id'] = str(result.inserted_id)
-    chatgpt_comment(memo['_id'], title)
+
+    # Start the chatgpt_comment function in a separate thread
+    thread1 = threading.Thread(target=chatgpt_comment, args=(memo['_id'], title))
+    thread1.start()
+    
+    # Return the response immediately with data:1
+    #print(memo)
     return jsonify({'code': 1, 'data': memo})
+
+def chatgpt_comment(id, title):
+    messages = []
+    messages.append({"role": "user", "content": title})
+    completion = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=messages)
+    chatgpt_reply = completion.choices[0].message["content"].strip()
+    db.memos.update_one({'_id': bson.ObjectId(id)}, {
+                        "$set": {"content": chatgpt_reply}})
+
 
 
 @app.route('/api/<id>/comment/create', methods=['POST'])
@@ -213,15 +218,12 @@ def show_comment(id):
     return jsonify({'code': 1, 'data': rs})
 
 
-def chatgpt_comment(id, title):
-    # user_content = request.form['title']
-    messages = []
-    messages.append({"role": "user", "content": title})
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=messages)
-    chatgpt_reply = completion.choices[0].message["content"].strip()
-    db.memos.update_one({'_id': bson.ObjectId(id)}, {
-                        "$set": {"content": chatgpt_reply}})
+
+
+   
+
+
+
 
 
 @app.route('/redirect')
