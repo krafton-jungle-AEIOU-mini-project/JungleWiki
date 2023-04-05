@@ -13,27 +13,26 @@ db = client.dbjungle
 @app.route('/')
 def home():
    return render_template('index.html')
-
-@app.route('/api/ask/create', methods=['POST'])
-def post_article():
+@app.route('/api/ask/list', methods=['GET'])
+def show_articles():
+    filter = {}
+    project = {}
+    rs = list()
+    docs = list(db.memos.find(filter, project).sort('date', -1))
+   # docs = list(db.memos.find().sort({'date', -1}))
+    #시간으로 리스트 정리하기
+    for memo in docs:
+        item = {
+            '_id': str(memo['_id']),
+            'title': memo['title'],
+            'content': memo['content'],
+            'nickname': memo['nickname'],
+            'date': dt.fromtimestamp(memo['date'])
+        }
+        rs.append(item)
     
-    title = request.form['title']
-    nickname = request.form['nickname']
-    now = int(time.time())
-    memo = {'title': title, 'content':"로딩중입니다", 'nickname':nickname,'date':now}
-    result = db.memos.insert_one(memo)
-    memo['_id'] = str(result.inserted_id)
-    chatgpt_comment(memo['_id'],title)
-    return jsonify({'code': 1, 'data': memo})
+    return jsonify({'code': 1, 'data': rs})
 
-
-def chatgpt_comment(id,title): 
-   # user_content = request.form['title']
-   messages = []
-   messages.append({"role": "user", "content": title})
-   completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages)
-   chatgpt_reply = completion.choices[0].message["content"].strip()
-   db.memos.update_one({'_id': bson.ObjectId(id)},{"$set":{"content":chatgpt_reply}})
    
 if __name__ == '__main__':  
    app.run('0.0.0.0',port=5000,debug=True)
