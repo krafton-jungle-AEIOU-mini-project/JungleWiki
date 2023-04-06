@@ -3,6 +3,25 @@
 {% block title %}상세페이지{%endblock %}
 
 {% block script %}
+{% if isAnswer == False %}
+<script>
+  let checkAnswer = setInterval(requestAnswer, 1000)
+
+  function requestAnswer() {
+    $.ajax({
+      type: 'GET',
+      url: '/api/isGPTAnswer/{{id}}',
+      data: {},
+      success: function (response) {
+        if (response['isGPTAnswer']) {
+          $('#answerGPT').html(response['content'])
+          clearInterval(checkAnswer)
+        }
+      },
+    });
+  }
+</script>
+{% endif %}
 {% endblock %}
 
 {% block head %}
@@ -15,29 +34,56 @@
 
 <div class="important flex flex-col w-full items-center pb-32">
   <div class="flex flex-col w-full py-2">
-    <div class="w-full border-2 border-transparent border-b-gray-300">
+    <button type="button" onclick="window.location.href='/';"
+      class="flex flex-row justify-around rounded-md bg-[#183828] w-28 px-2 py-2 text-base font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+        class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+      </svg>
+      목록보기
+    </button>
+    <div class="w-full border-2 border-transparent border-b-[#183828]">
       <p class="text-2xl font-bold px-3 py-3">{{title}}</p>
     </div>
     <div class="w-full flex justify-between py-2">
       <p class="text-sm px-3">질문자 : {{nickname}}</p>
       <p class="text-sm px-3">{{date}}</p>
     </div>
-    <div class="w-full flex flex-col px-3 py-2 border-dashed border-2 border-sky-500 bg-gray-200">
+    <div class="w-full flex flex-col px-3 py-2 border-dashed border-2 border-[#183828] bg-gray-200">
       <p class="text-xl font-bold">ChatGPT:</p>
-      <p class="text-lg">{{content}}</p>
+      {% if isAnswer == False %}
+      <div class="text-lg" id="answerGPT">
+        <div class="w-full flex flex-col items-center" role="status">
+          <svg aria-hidden="true"
+            class="inline w-12 h-12 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-green-500"
+            viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+              fill="currentColor" />
+            <path
+              d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+              fill="currentFill" />
+          </svg>
+          <span class="font-bold">ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!</span>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-lg" id="answerGPT">{{content}}</p>
+      {% endif %}
     </div>
     {% if isLogin == True %}
     <form class="flex w-full gap-x-4 my-5" action="/api/comment/create/{{id}}" method="POST">
       <input id="myComment" name="myComment" type="text" autocomplete="off" required
-        class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-black/10 focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
+        class="flex-auto rounded-md border-0 bg-white/5 px-3.5 py-2 text-zinc shadow-sm ring-1 ring-inset ring-[#183828] focus:ring-2 focus:ring-inset focus:ring-zinc-500 sm:text-sm sm:leading-6"
         placeholder="답변을 도와주세요! ChatGPT 친구가 정확하지 않아요!">
       <button type="submit"
-        class="flex-none rounded-md bg-zinc-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">답글달기</button>
+        class="flex-none rounded-md bg-[#183828] px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-zinc-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-500">답글달기</button>
     </form>
     {%endif%}
-    <div id="comment-list" class="flex flex-col border-2 border-transparent border-t-gray-200">
+    <div id="comment-list" class="flex flex-col border-2 border-transparent border-t-[#183828] border-b-[#183828]">
       {% for comment in commentData %}
-      <div class="px-8 py-3 space-y-4 border-2 border-transparent border-b-gray-200">
+      <div class="px-8 py-3 space-y-4 border-2 border-transparent border-b-gray-200 hover:bg-gray-100">
         <p class="text-xl font-bold">{{comment['nickname']}}</p>
         <p class="text-lg">{{comment['comment']}}</p>
         <p class="text-right">

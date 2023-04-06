@@ -102,7 +102,8 @@ def detail(id):
             commentData = show_comment(id)
             if data['content'] == '':
                 data['content'] = 'ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!'
-            return render_template('detail.html', isLogin=True, title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, id=id)
+
+            return render_template('detail.html', isLogin=True, title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, isAnswer=data['withAnswer'], id=id)
         except jwt.ExpiredSignatureError:
             session.pop('Authorization', None)
             return redirect(url_for("redirectPage", alert="로그인 시간이 만료되었습니다. 다시 로그인 해주세요."))
@@ -114,7 +115,7 @@ def detail(id):
         commentData = show_comment(id)
         if data['content'] == '':
             data['content'] = 'ChatGPT가 열심히 답변 중입니다. 잠시만 기다려주세요!'
-        return render_template('detail.html', title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, id=id)
+        return render_template('detail.html', title=data['title'], nickname=data['nickname'], content=data['content'], date=data['date'], commentData=commentData, isAnswer=data['withAnswer'], id=id)
 
 
 @app.route('/logout')
@@ -131,6 +132,7 @@ def read_article(id):
         'title': askData['title'],
         'content': askData['content'],
         'nickname': askData['nickname'],
+        'withAnswer': askData['withAnswer'],
         'date': datetime.datetime.fromtimestamp(askData['date']),
     }
     return detailData
@@ -142,8 +144,7 @@ def show_articles():
     project = {}
     rs = list()
     docs = list(db.askBoard.find(filter, project).sort('date', -1))
-   # docs = list(db.memos.find().sort({'date', -1}))
-    # 시간으로 리스트 정리하기
+
     for askData in docs:
         item = {
             '_id': str(askData['_id']),
@@ -157,13 +158,20 @@ def show_articles():
     return jsonify({'asks': rs}), 200
 
 
+@app.route('/api/isGPTAnswer/<id>', methods=['GET'])
+def isGPTAnswer(id):
+    filter = {'_id': bson.ObjectId(id)}
+    data = db.askBoard.find_one(filter)
+    return jsonify({'isGPTAnswer': data['withAnswer'], 'content': data['content']}), 200
+
+
 @app.route('/api/ask/create', methods=['POST'])
 def post_article():
     title = request.form['title']
     nickname = getUserNickName()
     now = int(time.time())
     askData = {'title': title, 'content': "",
-               'nickname': nickname, 'date': now}
+               'nickname': nickname, 'date': now, 'withAnswer': False}
     result = db.askBoard.insert_one(askData)
     askData['_id'] = str(result.inserted_id)
 
@@ -177,13 +185,15 @@ def post_article():
 
 
 def chatgpt_comment(id, title):
-    messages = []
+    messages = [
+        {"role": "system", "content": '개요에 맞게 1,000자 이내로 작성해줘.'}]
     messages.append({"role": "user", "content": title})
     completion = openai.ChatCompletion.create(
         model="gpt-3.5-turbo", messages=messages)
-    chatgpt_reply = completion.choices[0].message["content"].strip()
+    chatgpt_reply = completion.choices[0].message["content"].replace(
+        "\n", "<br/>")
     db.askBoard.update_one({'_id': bson.ObjectId(id)}, {
-        "$set": {"content": chatgpt_reply}})
+        "$set": {"content": chatgpt_reply, 'withAnswer': True}})
 
 
 @app.route('/api/comment/create/<id>', methods=['POST'])
